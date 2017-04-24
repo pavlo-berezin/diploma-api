@@ -1,5 +1,5 @@
-var Schema = require('mongoose').Schema;
-
+var mongoose = require('mongoose');
+var Schema = mongoose.Schema;
 var articleSchema = new Schema({
   title:  String,
   author: String,

@@ -1,6 +1,11 @@
 var models = require('../app/models/');
 var ArticleModel = models.ArticleModel;
 module.exports = function (app) {
+  app.use(function(req, res, next) {
+    res.header("Content-Type", "application/json");
+    next();
+  });
+
   // Article routes
   app.post('/article', function(req, res) {
       var article = new ArticleModel(req.body);
