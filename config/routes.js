@@ -1,5 +1,7 @@
 var models = require('../app/models/');
+var controllers = require('../app/controllers');
 var ArticleModel = models.ArticleModel;
+var categoriesController = controllers.categoriesController;
 module.exports = function (app) {
   app.use(function(req, res, next) {
     res.header("Content-Type", "application/json");
@@ -11,7 +13,13 @@ module.exports = function (app) {
       var article = new ArticleModel(req.body);
       article.save(function (err) {
         if (!err) {
-            return res.send({ status: 'OK', article: article });
+            categoriesController.getEntities(article.body).then(function(resp){
+                ArticleModel.update({ _id: article.id }, { $set: { categories: categoriesController.getCategories(resp)}}, function(article) {
+                    return res.send({ status: 'OK', article: article});
+                });
+            }).catch(function(error) {
+                return res.send({status: 'OK', article: article});
+            });
         } else {
             if(err.name == 'ValidationError') {
                 res.statusCode = 400;

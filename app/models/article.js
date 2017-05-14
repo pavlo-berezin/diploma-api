@@ -4,6 +4,7 @@ var articleSchema = new Schema({
   title:  String,
   author: String,
   body:   String,
+  categories: [String],
   date: { type: Date, default: Date.now }
 });
 
