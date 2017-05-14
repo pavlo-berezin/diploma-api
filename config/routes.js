@@ -32,7 +32,7 @@ module.exports = function (app) {
   });
 
   app.get('/article', function(req,res) {
-    ArticleModel.find({}, function(err, found) {
+    ArticleModel.find({}).sort('-date').exec(function(err, found) {
       if(!err) {
         res.send({ status: 'OK', articles: found })
       }
