@@ -14,12 +14,13 @@ module.exports = function (app) {
       article.save(function (err) {
         if (!err) {
             categoriesController.getEntities(article.body).then(function(resp){
-                ArticleModel.update({ _id: article.id }, { $set: { categories: categoriesController.getCategories(resp)}}, function(article) {
-                    return res.send({ status: 'OK', article: article});
-                });
+                ArticleModel.update({ _id: article.id }, { $set: { categories: categoriesController.getCategories(resp)}}, function(article) {}).catch(function(err){
+                    console.log('failed to update ArticleModel: ' + article.id);
+                })
             }).catch(function(error) {
-                return res.send({status: 'OK', article: article});
+                console.log('failed to get Enitites for Article: ' + article.id);
             });
+            return res.send({ status: 'OK', article: article, message: 'HELLO'});
         } else {
             if(err.name == 'ValidationError') {
                 res.statusCode = 400;
