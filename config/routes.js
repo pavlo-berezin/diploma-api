@@ -14,11 +14,10 @@ module.exports = function (app) {
       article.save(function (err) {
         if (!err) {
             categoriesController.getEntities(article.body).then(function(resp){
-                ArticleModel.update({ _id: article.id }, { $set: { categories: categoriesController.getCategories(resp)}}, function(article) {}).catch(function(err){
-                    console.log('failed to update ArticleModel: ' + article.id);
-                })
+                ArticleModel.update({ _id: article.id }, { $set: { categories: categoriesController.getCategories(resp)}}, function(article) {})
             }).catch(function(error) {
                 console.log('failed to get Enitites for Article: ' + article.id);
+                console.log(error);
             });
             return res.send({ status: 'OK', article: article, message: 'HELLO'});
         } else {

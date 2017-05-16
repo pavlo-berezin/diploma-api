@@ -28,12 +28,35 @@ module.exports = {
     },
 
     getCategories: function(data) {
-        var categories = [];
-        data.annotations.forEach(function(annotation) {
-            [].push.apply(categories, annotation.categories.filter(function(el, i) {
-                return i < 3;
-            }));
+        var annotations = data.annotations.sort(function(a,b) {
+            return b.confidence - a.confidence;
         });
+        var perAnnotation = 10 / annotations.length;
+        if (perAnnotation > 1) {
+            ~~perAnnotation;
+            var extraFirst = perAnnotation % annotations.length;
+        } else {
+            extraFirst = 0;
+            perAnnotation = 1;
+        }
+        var categories = [];
+        var slicedCategories;
+        var toSlice;
+        for (var i = 0; i < annotations.length; i++) {
+            toSlice = perAnnotation;
+
+            if (i == 0) {
+                toSlice += extraFirst;
+            }
+
+            filteredCategories = annotations[i].categories ? annotations[i].categories.slice(0, toSlice) : [];
+
+            [].push.apply(categories, filteredCategories);
+
+            if (categories.length >= 10) {
+                break;
+            }
+        }
         return categories;
     }
 };
