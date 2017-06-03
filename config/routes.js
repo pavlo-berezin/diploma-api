@@ -44,9 +44,14 @@ module.exports = function (app) {
         console.log(categories);
         var filter = {}
         if (categories) {
+            categories = categories.map(function(el) {
+                return new RegExp(el, 'i');
+            });
+
             filter.categories = {
-                $in: categories
+                $all: categories
             }
+
         }
         ArticleModel.find(filter).sort('-date').exec(function(err, found) {
             if(!err) {
