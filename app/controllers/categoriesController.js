@@ -57,6 +57,9 @@ module.exports = {
                 break;
             }
         }
+        categories = categories.filter(function(el, index, arr) {
+            return arr.indexOf(el) == index;
+        });
         return categories;
     }
 };
