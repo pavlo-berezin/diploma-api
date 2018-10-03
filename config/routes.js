@@ -2,6 +2,7 @@ var models = require('../app/models/');
 var controllers = require('../app/controllers');
 var ArticleModel = models.ArticleModel;
 var categoriesController = controllers.categoriesController;
+
 module.exports = function (app) {
     app.use(function(req, res, next) {
         res.header("Content-Type", "application/json");
