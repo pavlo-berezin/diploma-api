@@ -1,10 +1,10 @@
-var express     = require('express');
-var winston     = require('winston');
-var mongoose    = require('mongoose');
+var express = require('express');
+var winston = require('winston');
+var mongoose = require('mongoose');
 
-var settings    = require('./config/settings');
-var routes      = require('./config/routes');
-var bodyParser  = require('body-parser');
+var settings = require('./config/settings');
+var routes = require('./app/routes');
+var bodyParser = require('body-parser');
 
 winston.add(winston.transports.File, {
   filename: './logs/exceptions.log',
@@ -22,15 +22,21 @@ module.exports.start = function (done) {
   var db = mongoose.connection;
 
   db.on('error', function (err) {
-      console.error('connection error:', err.message);
+    console.error('connection error:', err.message);
   });
-  db.once('open', function callback () {
-      console.log("Connected to DB!");
+  db.once('open', function callback() {
+    console.log("Connected to DB!");
   });
 
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({ extended: true }));
-  routes(app);
+  app.use(function (req, res, next) {
+    res.header("Content-Type", "application/json");
+    next();
+  });
+
+  app.use('/', routes);
+  // routes(app);
 
   app.listen(settings.port, function () {
     console.log("Listening on port " + settings.port);
