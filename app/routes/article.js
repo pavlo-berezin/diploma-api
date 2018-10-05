@@ -2,47 +2,63 @@ const express = require('express'),
       router = express.Router(),
       models = require('../models/'),
       controllers = require('../controllers'),
+      to = require('await-to-js').default,
       ArticleModel = models.ArticleModel,
       categoriesController = controllers.categoriesController;
 
-router.post('/', function (req, res) {
+router.post('/', async function (req, res) {
   var article = new ArticleModel(req.body);
 
-  article.save(function (err) {
-    if (!err) {
-      categoriesController.getEntities(article.body).then(function (resp) {
-        ArticleModel.update({ _id: article.id }, { $set: { categories: categoriesController.getCategories(resp) } }, function (newArticle) {
-          return res.send({ status: 'OK', article: newArticle});
-        })
-      }).catch(function (error) {
-        console.log('failed to get Enitites for Article: ' + article.id);
-        console.log(error);
-      });
-    } else {
-      if (err.name == 'ValidationError') {
-        res.statusCode = 400;
-        res.send({ error: 'Validation error', status: 'ERROR' });
+  const [err] = await to(article.save());
+
+  if (!err) {
+    const [entitiesErr, entities] = await to(categoriesController.getEntities(article.body));
+
+    if (!entitiesErr) {
+      const categories = categoriesController.getCategories(entities);
+      const conditions = { _id: article.id };
+      const update = {$set: {categories}};
+      const options = {new: true};
+      const query = ArticleModel.findOneAndUpdate(conditions, update, options);
+
+      const [updateErr, updatedArticle] = await to(query);
+
+      if (!updateErr) {
+        res.send({ article: updatedArticle, status: 'OK' });
       } else {
-        res.statusCode = 500;
-        res.send({ error: 'Server error', status: 'ERROR' });
+        console.log('failed to update for Article' + article.id);
+        console.log(updateErr);
       }
-    }
-  });
-});
-
-router.get('/:id', function (req, res) {
-  const id = req.params.id;
-  ArticleModel.findById(id, function (err, found) {
-    if (err) {
-      res.statusCode = 404;
-      res.send({ error: 'Article not Found', status: 'ERROR' });
     } else {
-      res.send({ status: 'OK', article: found })
+      res.send({ article, status: 'OK' });
+      console.log('failed to get Enitites for Article: ' + article.id);
+      console.log(error);
     }
-  });
+  } else {
+    if (err.name == 'ValidationError') {
+      res.statusCode = 400;
+      res.send({ error: 'Validation error', status: 'ERROR' });
+    } else {
+      res.statusCode = 500;
+      res.send({ error: 'Server error', status: 'ERROR' });
+    }
+  }
 });
 
-router.get('/', function (req, res) {
+router.get('/:id', async function (req, res) {
+  const id = req.params.id;
+
+  const [err, article] = await to(ArticleModel.findById(id));
+
+  if (!err) {
+    res.send({ article, status: 'OK' });
+  } else {
+    res.statusCode = 404;
+    res.send({ error: 'Article not Found', status: 'ERROR'});
+  }
+});
+
+router.get('/', async function (req, res) {
   var categories = req.query.categories && req.query.categories.split(',');
   var filter = {}
 
@@ -56,27 +72,27 @@ router.get('/', function (req, res) {
     }
   }
 
-  ArticleModel.find(filter).sort('-date').exec(function (err, found) {
-    if (!err) {
-      res.send({ status: 'OK', articles: found })
-    } else {
-      res.statusCode = 404;
-      res.send({ error: 'Not Found', status: 'ERROR' });
-    }
-  });
+  const [err, articles] = await to(ArticleModel.find(filter).sort('-date').exec());
+
+  if (!err) {
+    res.send({ articles, status: 'OK' })
+  } else {
+    res.statusCode = 404;
+    res.send({ error: 'Not Found', status: 'ERROR' });
+  }
 });
 
-router.delete('/:id', function (req, res) {
+router.delete('/:id', async function (req, res) {
   const id = req.params.id;
 
-  ArticleModel.findByIdAndRemove(id, function (err, found) {
-    if (!err) {
-      res.send({ status: 'OK', removed: found })
-    } else {
-      res.statusCode = 500;
-      res.send({ error: 'Internal error', status: 'ERROR' });
-    }
-  });
+  const [err, article] = await to(ArticleModel.findByIdAndRemove(id));
+
+  if (!err) {
+    res.send({ status: 'OK', removed: article })
+  } else {
+    res.statusCode = 500;
+    res.send({ error: `Internal error: ${err}`, status: 'ERROR' });
+  }
 });
 
 

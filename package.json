@@ -9,7 +9,8 @@
   },
   "author": "Pavlo Berezin",
   "license": "MIT",
-  "devDependencies": {
+  "dependencies": {
+    "await-to-js": "^2.0.1",
     "body-parser": "^1.17.1",
     "express": "^4.15.2",
     "mongoose": "^4.9.4",
