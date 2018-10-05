@@ -1,65 +1,61 @@
 
-var models = require('../models');
-var request = require('request');
+const models = require('../models'),
+      request = require('request-promise-native'),
+      to = require('await-to-js').default;
 
-module.exports = {
-    getEntities: function(text) {
-        var url = 'https://api.dandelion.eu/datatxt/nex/v1'
-        var token = '2932ce6ca2614984a39468537ba9533d';
-        var include = ['types', 'categories', 'lod', 'alternate_labels'].join(', ');
-        var params = {
-            text: text,
-            token: token,
-            include: include
-        }
-        return new Promise(function (fulfill, reject){
-            request.post(
-                url,
-                { form: params },
-                function (error, response, body) {
-                    if (!error && response.statusCode == 200) {
-                        fulfill(JSON.parse(body));
-                    } else {
-                        reject(response);
-                    }
-                }
-            );
-         });
-    },
+const controller = {};
 
-    getCategories: function(data) {
-        var annotations = data.annotations.sort(function(a,b) {
-            return b.confidence - a.confidence;
-        });
-        var perAnnotation = 10 / annotations.length;
-        if (perAnnotation > 1) {
-            ~~perAnnotation;
-            var extraFirst = perAnnotation % annotations.length;
-        } else {
-            extraFirst = 0;
-            perAnnotation = 1;
-        }
-        var categories = [];
-        var slicedCategories;
-        var toSlice;
-        for (var i = 0; i < annotations.length; i++) {
-            toSlice = perAnnotation;
+controller.getEntities = async (text) => {
+  const url = 'https://api.dandelion.eu/datatxt/nex/v1';
+  const token = '2932ce6ca2614984a39468537ba9533d';
+  const include = ['types', 'categories', 'lod', 'alternate_labels'].join(', ');
+  const params = { text, token, include};
 
-            if (i == 0) {
-                toSlice += extraFirst;
-            }
+  const promise = new Promise(async (resolve, reject) => {
+    const options = {
+      url,
+      form: params,
+      resolveWithFullResponse: true
+    };
 
-            filteredCategories = annotations[i].categories ? annotations[i].categories.slice(0, toSlice) : [];
-
-            [].push.apply(categories, filteredCategories);
-
-            if (categories.length >= 10) {
-                break;
-            }
-        }
-        categories = categories.filter(function(el, index, arr) {
-            return arr.indexOf(el) == index;
-        });
-        return categories;
+    const [error, response] = await to(request.post(options));
+    if (!error && /^2/.test('' + response.statusCode)) {
+      resolve(JSON.parse(response.body));
+    } else {
+      reject(error);
     }
+  });
+  
+  return promise;
 };
+
+controller.getCategories = ({ annotations }) => {
+  const maxLength = 10;
+
+  const annotationsMap = annotations
+    .reduce((p, {confidence, categories = []}) => [...p, ...categories.map(category => ({confidence, category}))], [])
+    .reduce((result, {confidence, category}) => {
+      result[category] = result[category] || {};
+      result[category].count = (result[category].count || 0) + 1;
+      result[category].confidenceSum = (result[category].confidenceSum || 0) + confidence;
+
+      return result;
+    }, {});
+
+
+    return Object.entries(annotationsMap)
+                  .sort(([aKey, aVal], [bKey, bVal]) => {
+                    if (bVal.count === aVal.count) {
+                      const aConfAvg = aVal.confidenceSum / aVal.count;
+                      const bConfAvg = bVal.confidenceSum / bVal.count;
+
+                      return bConfAvg === aConfAvg ? 0 : (bConfAvg > aConfAvg ? 1 : -1);
+                    }
+
+                    return bVal.count > aVal.count ? 1 : -1;
+                  })
+                  .map(([key]) => key)
+                  .slice(0, maxLength);
+};
+
+module.exports = controller;
