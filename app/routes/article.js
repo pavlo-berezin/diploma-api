@@ -59,17 +59,13 @@ router.get('/:id', async function (req, res) {
 });
 
 router.get('/', async function (req, res) {
-  var categories = req.query.categories && req.query.categories.split(',');
-  var filter = {}
+  let { categories } = req.query;
+  let filter = {}
 
-  if (categories) {
-    categories = categories.map(function (el) {
-      return new RegExp(el, 'i');
-    });
+  if (categories && categories.length) {
+    categories = Array.isArray(categories) ? categories : [categories];
 
-    filter.categories = {
-      $all: categories
-    }
+    filter.categories = { $all: categories.map(el => new RegExp(el, 'i')) }
   }
 
   const [err, articles] = await to(ArticleModel.find(filter).sort('-date').exec());
