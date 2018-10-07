@@ -7,7 +7,7 @@ const mongoose = require('mongoose'),
 const UserSchema = new Schema({
   username: { type: String, required: true, index: { unique: true } },
   password: { type: String, required: true },
-  role: { type: String, enum: ['Admin', 'User'], default: 'User' },
+  role: { type: String, enum: ['ADMIN', 'USER'], default: 'User' },
   email: String,
   firstName: String,
   lastName: String,
@@ -33,7 +33,7 @@ UserSchema.pre('save', async function(next) {
 });
 
 UserSchema.methods.comparePassword = function(candidate) {
-  return bcrypt.compare(candidatePassword, this.password)
+  return bcrypt.compare(candidate, this.password)
 };
 
 const UserModel = mongoose.model('User', UserSchema);
