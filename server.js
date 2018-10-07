@@ -1,10 +1,12 @@
-var express = require('express');
-var winston = require('winston');
-var mongoose = require('mongoose');
-
-var settings = require('./config/settings');
-var routes = require('./app/routes');
-var bodyParser = require('body-parser');
+const express = require('express'),
+      expressSession = require('express-session'),
+      winston = require('winston'),
+      mongoose = require('mongoose'),
+      settings = require('./config/settings'),
+      routes = require('./app/routes'),
+      bodyParser = require('body-parser'),
+      passport = require('passport'),
+      configPassport = require('./config/passport');
 
 winston.add(winston.transports.File, {
   filename: './logs/exceptions.log',
@@ -18,7 +20,7 @@ winston.add(winston.transports.File, {
 module.exports.start = function (done) {
   var app = express();
 
-  mongoose.connect('mongodb://localhost/diploma');
+  mongoose.connect('mongodb://localhost/diploma', { useMongoClient: true });
   var db = mongoose.connection;
 
   db.on('error', function (err) {
@@ -28,15 +30,21 @@ module.exports.start = function (done) {
     console.log("Connected to DB!");
   });
 
+  configPassport();
+
   app.use(bodyParser.json());
   app.use(bodyParser.urlencoded({ extended: true }));
   app.use(function (req, res, next) {
     res.header("Content-Type", "application/json");
     next();
   });
+  // TODO: move secrets out.
+  app.use(expressSession(({ secret: 'randomSecret', resave: false, saveUninitialized: false })));
+
+  app.use(passport.initialize());
+  app.use(passport.session());
 
   app.use('/', routes);
-  // routes(app);
 
   app.listen(settings.port, function () {
     console.log("Listening on port " + settings.port);
