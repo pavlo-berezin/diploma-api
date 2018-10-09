@@ -6,8 +6,8 @@ const mongoose = require('mongoose'),
 
 const UserSchema = new Schema({
   username: { type: String, required: true, index: { unique: true } },
-  password: { type: String, required: true },
-  role: { type: String, enum: ['ADMIN', 'USER'], default: 'User' },
+  password: { type: String, required: true, select: false },
+  role: { type: String, enum: ['ADMIN', 'USER'], default: 'USER' },
   email: String,
   firstName: String,
   lastName: String,

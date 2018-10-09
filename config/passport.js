@@ -7,7 +7,7 @@ const passport = require('passport'),
 module.exports = () => {
   passport.use(new Strategy(
     async function(username, password, cb) {
-      const [err, user] = await to(UserModel.findOne({ username }));
+      const [err, user] = await to(UserModel.findOne({ username }).select('+password'));
   
       if (err) { return cb(err); }
       if (!user) { return cb(null, false); }
@@ -22,9 +22,8 @@ module.exports = () => {
 
   passport.use('local-signup', new Strategy(
     { passReqToCallback : true },
-    async function(username, password, cb) {
-      const [err, user] = UserModel.findOne({ username });
-
+    async function(req, username, password, cb) {
+      const [err, user] = await to(UserModel.findOne({ username }));
       if (err) { return cb(err); }
       if (user) { return cb(null, false) }
 
@@ -34,7 +33,7 @@ module.exports = () => {
 
       if (saveError) { return cb(err); }
 
-      return cb(null, user);
+      return cb(null, newUser);
     }
   ));
 
