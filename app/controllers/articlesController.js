@@ -1,5 +1,5 @@
 const models = require('../models'),
-  mongoose = require('mongoose');
+  mongoose = require('mongoose'),
   ArticleModel = models.ArticleModel,
   UserModel = models.UserModel,
   controllers = require('../controllers'),
@@ -16,7 +16,6 @@ async function saveArticle(data) {
 
     if (err) {
       let error, statusCode;
-      console.log('onsave', err);
       if (err.name == 'ValidationError') {
         statusCode = 400;
         error = ({ error: 'Validation error', status: 'ERROR' });
@@ -32,7 +31,7 @@ async function saveArticle(data) {
 
     if (textCategoriesError) {
       resolve({ article, status: 'OK' });
-      console.log('failed to get textCategories for Article: ' + article.id);
+      console.log('Failed to get textCategories for Article: ' + article.id);
       console.log(textCategoriesError);
       return;
     }
@@ -41,7 +40,7 @@ async function saveArticle(data) {
     const userConditions = { _id: article.author };
     const update = { $set: { textCategories } };
     const options = { new: true };
-    const articleQuery = ArticleModel.findOneAndUpdate(articleConditions, update, options).populate({ 
+    const articleQuery = ArticleModel.findOneAndUpdate(articleConditions, update, options).populate({
       path: 'textCategories',
       populate: {
         path: 'category',
