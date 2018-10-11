@@ -4,45 +4,18 @@ const express = require('express'),
       controllers = require('../controllers'),
       to = require('await-to-js').default,
       ArticleModel = models.ArticleModel,
-      categoriesController = controllers.categoriesController;
+      articlesController = controllers.articlesController;
 
 router.post('/', async function (req, res) {
-  var article = new ArticleModel(req.body);
+  const [error, article] = await to(articlesController.saveArticle(req.body));
 
-  const [err] = await to(article.save());
-
-  if (!err) {
-    const [entitiesErr, entities] = await to(categoriesController.getEntities(article.body));
-
-    if (!entitiesErr) {
-      const categories = categoriesController.getCategories(entities);
-      const conditions = { _id: article.id };
-      const update = {$set: {categories}};
-      const options = {new: true};
-      const query = ArticleModel.findOneAndUpdate(conditions, update, options);
-
-      const [updateErr, updatedArticle] = await to(query);
-
-      if (!updateErr) {
-        res.send({ article: updatedArticle, status: 'OK' });
-      } else {
-        console.log('failed to update for Article' + article.id);
-        console.log(updateErr);
-      }
-    } else {
-      res.send({ article, status: 'OK' });
-      console.log('failed to get Enitites for Article: ' + article.id);
-      console.log(error);
-    }
-  } else {
-    if (err.name == 'ValidationError') {
-      res.statusCode = 400;
-      res.send({ error: 'Validation error', status: 'ERROR' });
-    } else {
-      res.statusCode = 500;
-      res.send({ error: 'Server error', status: 'ERROR' });
-    }
+  if (error) {
+    res.statusCode = error.statusCode;
+    res.send(error.error);
   }
+
+  res.statusCode = 200;
+  res.send(article);
 });
 
 router.get('/:id', async function (req, res) {
@@ -68,7 +41,7 @@ router.get('/', async function (req, res) {
     filter.categories = { $all: categories.map(el => new RegExp(el, 'i')) }
   }
 
-  const [err, articles] = await to(ArticleModel.find(filter).sort('-date').exec());
+  const [err, articles] = await to(ArticleModel.find(filter).sort('-date').populate('categories').exec());
 
   if (!err) {
     res.send({ articles, status: 'OK' })

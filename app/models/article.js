@@ -1,10 +1,11 @@
 var mongoose = require('mongoose');
 var Schema = mongoose.Schema;
+
 var articleSchema = new Schema({
   title: String,
-  author: String,
+  author: { type: Schema.Types.ObjectId, ref: 'User' },
   body: String,
-  categories: [String],
+  categories: [{ type: Schema.Types.ObjectId, ref: 'Category' }],
   date: { type: Date, default: Date.now }
 });
 

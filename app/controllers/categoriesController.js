@@ -1,6 +1,7 @@
 
 const models = require('../models'),
       request = require('request-promise-native'),
+      CategoryModel = models.CategoryModel,
       to = require('await-to-js').default;
 
 const controller = {};
@@ -29,7 +30,7 @@ controller.getEntities = async (text) => {
   return promise;
 };
 
-controller.getCategories = ({ annotations }) => {
+controller.getCategories = async ({ annotations }) => {
   const maxLength = 10;
 
   const annotationsMap = annotations
@@ -43,7 +44,7 @@ controller.getCategories = ({ annotations }) => {
     }, {});
 
 
-    return Object.entries(annotationsMap)
+    const stringCategories = Object.entries(annotationsMap)
                   .sort(([aKey, aVal], [bKey, bVal]) => {
                     if (bVal.count === aVal.count) {
                       const aConfAvg = aVal.confidenceSum / aVal.count;
@@ -56,6 +57,28 @@ controller.getCategories = ({ annotations }) => {
                   })
                   .map(([key]) => key)
                   .slice(0, maxLength);
+
+    const promise = new Promise(async (resolve, reject) => {
+      const [findError, categories] = await to(CategoryModel.find({name: {$in: stringCategories}}));
+
+      if (findError) {
+        reject(findError);
+        return;
+      }
+
+      const categoriesToInsert = stringCategories.filter(name => !categories.find(category => category.name === name))
+                                                 .map(name => ({ name }))
+      const [insertError, insertedCategories] = await to(CategoryModel.insertMany(categoriesToInsert));
+
+      if (insertError) {
+        reject(insertError);
+        return;
+      }
+
+      resolve(insertedCategories.concat(categories));
+    });
+
+    return promise;
 };
 
 module.exports = controller;

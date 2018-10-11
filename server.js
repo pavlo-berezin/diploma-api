@@ -20,7 +20,7 @@ winston.add(winston.transports.File, {
 module.exports.start = function (done) {
   var app = express();
 
-  mongoose.connect('mongodb://localhost/diploma', { useMongoClient: true });
+  mongoose.connect('mongodb://localhost/diploma');
   var db = mongoose.connection;
 
   db.on('error', function (err) {

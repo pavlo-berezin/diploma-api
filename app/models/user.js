@@ -4,6 +4,13 @@ const mongoose = require('mongoose'),
     saltRounds = 10,
     to = require('await-to-js').default;
 
+const CategoriesInfoSchema = new Schema({
+  count: Number,
+  minWeight: Number,
+  maxWeight: Number,
+  avgWeight: Number
+});
+
 const UserSchema = new Schema({
   username: { type: String, required: true, index: { unique: true } },
   password: { type: String, required: true, select: false },
@@ -15,6 +22,7 @@ const UserSchema = new Schema({
   dob: Date,
   registeredAt: { type: Date, default: Date.now },
   updatedAT: { type: Date, default: Date.now },
+  categories: {type: Map, of: CategoriesInfoSchema}
 });
 
 UserSchema.pre('save', async function(next) {
