@@ -1,14 +1,15 @@
 const models = require('../models'),
-      request = require('request-promise-native'),
-      ArticleModel = models.ArticleModel,
-      controllers = require('../controllers'),
-      categoriesController = controllers.categoriesController,
-      to = require('await-to-js').default;
+  mongoose = require('mongoose');
+  ArticleModel = models.ArticleModel,
+  UserModel = models.UserModel,
+  controllers = require('../controllers'),
+  textCategoriesController = controllers.textCategoriesController,
+  to = require('await-to-js').default;
 
-const controller = {};
-
-controller.saveArticle = (data) => {
+async function saveArticle(data) {
   const promise = new Promise(async (resolve, reject) => {
+    data.author = data.author && mongoose.Types.ObjectId(data.author);
+
     const article = new ArticleModel(data);
 
     const [err] = await to(article.save());
@@ -27,34 +28,41 @@ controller.saveArticle = (data) => {
       return;
     }
 
-    const [entitiesErr, entities] = await to(categoriesController.getEntities(article.body));
+    const [textCategoriesError, textCategories] = await to(textCategoriesController.getTextCategoriesArray(article.body));
 
-    if (entitiesErr) {
+    if (textCategoriesError) {
       resolve({ article, status: 'OK' });
-      console.log('failed to get Enitites for Article: ' + article.id);
-      console.log(entitiesErr);
+      console.log('failed to get textCategories for Article: ' + article.id);
+      console.log(textCategoriesError);
       return;
     }
 
-    const [categoriesError, categories] = await to(categoriesController.getCategories(entities));
+    const articleConditions = { _id: article.id };
+    const userConditions = { _id: article.author };
+    const update = { $set: { textCategories } };
+    const options = { new: true };
+    const articleQuery = ArticleModel.findOneAndUpdate(articleConditions, update, options).populate({ 
+      path: 'textCategories',
+      populate: {
+        path: 'category',
+        model: 'Category'
+      }
+    });
+    const userQuery = UserModel.findOneAndUpdate(userConditions, update, options);
 
-    if (categoriesError) {
-      resolve({ article, status: 'OK' });
-      console.log('failed to get Categories for Article: ' + article.id);
-      console.log(categoriesError);
-      return;
-    }
+    const [articleUpdateErr, updatedArticle] = await to(articleQuery);
+    const [userUpdateErr] = await to(userQuery);
 
-    const conditions = { _id: article.id };
-    const update = {$set: {categories}};
-    const options = {new: true};
-    const query = ArticleModel.findOneAndUpdate(conditions, update, options);
-
-    const [updateErr, updatedArticle] = await to(query);
-
-    if (updateErr) {
-      console.log('failed to update for Article' + article.id);
+    if (articleUpdateErr) {
+      resolve({ article: updatedArticle, status: 'OK' })
+      console.log('Failed to add textCategories to Article:' + article.id);
       console.log(updateErr);
+      return;
+    }
+
+    if (userUpdateErr) {
+      console.log('Failed to add textCategories to User, Article: ' + article.id);
+      console.log(userUpdateErr);
     }
 
     resolve({ article: updatedArticle, status: 'OK' })
@@ -63,4 +71,4 @@ controller.saveArticle = (data) => {
   return promise;
 }
 
-module.exports = controller;
+module.exports = { saveArticle };

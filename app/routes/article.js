@@ -21,7 +21,13 @@ router.post('/', async function (req, res) {
 router.get('/:id', async function (req, res) {
   const id = req.params.id;
 
-  const [err, article] = await to(ArticleModel.findById(id));
+  const [err, article] = await to(ArticleModel.findById(id).populate({ 
+    path: 'textCategories',
+    populate: {
+      path: 'category',
+      model: 'Category'
+    }
+  }));
 
   if (!err) {
     res.send({ article, status: 'OK' });
@@ -41,7 +47,13 @@ router.get('/', async function (req, res) {
     filter.categories = { $all: categories.map(el => new RegExp(el, 'i')) }
   }
 
-  const [err, articles] = await to(ArticleModel.find(filter).sort('-date').populate('categories').exec());
+  const [err, articles] = await to(ArticleModel.find(filter).sort('-date').populate({ 
+    path: 'textCategories',
+    populate: {
+      path: 'category',
+      model: 'Category'
+    }
+  }).exec());
 
   if (!err) {
     res.send({ articles, status: 'OK' })

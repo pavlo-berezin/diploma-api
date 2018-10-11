@@ -5,7 +5,7 @@ var articleSchema = new Schema({
   title: String,
   author: { type: Schema.Types.ObjectId, ref: 'User' },
   body: String,
-  categories: [{ type: Schema.Types.ObjectId, ref: 'Category' }],
+  textCategories: [{ type: Schema.Types.ObjectId, ref: 'TextCategory' }],
   date: { type: Date, default: Date.now }
 });
 
