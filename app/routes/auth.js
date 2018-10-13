@@ -23,7 +23,7 @@ router.post('/login',
 
 router.post('/logout', function (req, res) {
   req.logout();
-  res.redirect('/');
+  res.send(({status: 'OK'}));
 });
 
 router.post('/signup',
