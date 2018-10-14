@@ -27,7 +27,7 @@ router.get('/:id', async function (req, res) {
       path: 'category',
       model: 'Category'
     }
-  }));
+  }).populate('author'));
 
   if (!err) {
     res.send({ article, status: 'OK' });
@@ -56,6 +56,7 @@ router.get('/', async function (req, res) {
           model: 'Category'
         }
       })
+      .populate('author')
       .lean()
       .exec()
   );
