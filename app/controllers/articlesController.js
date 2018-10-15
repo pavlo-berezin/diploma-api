@@ -4,6 +4,8 @@ const models = require('../models'),
   UserModel = models.UserModel,
   controllers = require('../controllers'),
   textCategoriesController = controllers.textCategoriesController,
+  fs = require('fs'),
+  textract = require('textract'),
   to = require('await-to-js').default;
 
 async function saveArticle(data) {
@@ -70,4 +72,25 @@ async function saveArticle(data) {
   return promise;
 }
 
-module.exports = { saveArticle };
+async function getArticleText(file) {
+  console.log(file);
+  const promise = new Promise(async (resolve, reject) => {
+    textract.fromFileWithMimeAndPath(file.mimetype, file.path, { preserveOnlyMultipleLineBreaks: true }, function (error, text) {
+      fs.unlink(file.path, (err) => console.log(err));
+
+      if (text) {
+        resolve(text);
+        return;
+      }
+
+      if (error) {
+        reject(error);
+        return;
+      }
+    });
+  });
+
+  return promise;
+}
+
+module.exports = { saveArticle, getArticleText };

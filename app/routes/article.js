@@ -3,8 +3,38 @@ const express = require('express'),
   models = require('../models/'),
   controllers = require('../controllers'),
   to = require('await-to-js').default,
+  multer = require('multer'),
+  upload = multer({ dest: './tempUploads/' }),
   ArticleModel = models.ArticleModel,
   articlesController = controllers.articlesController;
+
+
+router.post('/withFile', upload.single('article'), async function (req, res, next) {
+  const [parseError, articleText] = await to(articlesController.getArticleText(req.file));
+
+  if (parseError) {
+    res.statusCode = parseError.statusCode || 500;
+    res.send({error: parseError, status: 'ERROR'});
+    return;
+  }
+
+  const articleRequest = {
+    ...req.body,
+    body: articleText
+  };
+
+  console.log(articleRequest);
+
+  const [error, article] = await to(articlesController.saveArticle(articleRequest));
+
+  if (error) {
+    res.statusCode = error.statusCode;
+    res.send(error.error);
+  }
+
+  res.statusCode = 200;
+  res.send(article);
+});
 
 router.post('/', async function (req, res) {
   const [error, article] = await to(articlesController.saveArticle(req.body));
